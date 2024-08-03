@@ -1,0 +1,205 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Tic-Tac-Toe</h1>
+    <div id="game-board" class="game-board">
+        <!-- Cells will be dynamically created by JavaScript -->
+    </div>
+    <button id="play-again" class="hidden">Play Again</button>
+    <div id="console-output"></div>
+    <script src="script.js"></script>
+</body>
+</html>
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    margin-top: 20px;
+}
+
+.game-board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-template-rows: repeat(3, 100px);
+    gap: 5px;
+    margin: 20px auto;
+    width: 320px;
+}
+
+.cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100px;
+    height: 100px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+}
+
+.cell:hover {
+    background-color: #e0e0e0;
+}
+
+#play-again {
+    margin: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+#console-output {
+    margin-top: 20px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    text-align: left;
+    width: 320px;
+    margin: 0 auto;
+}
+const PLAYER_X = 'X';
+const PLAYER_O = 'O';
+const EMPTY = ' ';
+
+let board = Array(9).fill(EMPTY);
+let isGameOver = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const boardElement = document.getElementById('game-board');
+    const playAgainButton = document.getElementById('play-again');
+    const consoleOutput = document.getElementById('console-output');
+
+    // Create cells
+    for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => playerMove(i));
+        boardElement.appendChild(cell);
+    }
+
+    playAgainButton.addEventListener('click', resetBoard);
+
+    function playerMove(index) {
+        if (isGameOver || board[index] !== EMPTY) return;
+        board[index] = PLAYER_O;
+        updateBoard();
+        if (checkGameOver()) return;
+        aiMove();
+        checkGameOver();
+    }
+
+    function aiMove() {
+        const move = findBestMove();
+        if (move !== -1) {
+            board[move] = PLAYER_X;
+            updateBoard();
+        }
+    }
+
+    function findBestMove() {
+        let bestMove = -1;
+        let bestScore = -Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (board[i] === EMPTY) {
+                board[i] = PLAYER_X;
+                const score = minimax(board, 0, false);
+                board[i] = EMPTY;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = i;
+                }
+            }
+        }
+        return bestMove;
+    }
+
+    function minimax(board, depth, isMaximizing) {
+        const winner = checkWinner();
+        if (winner === PLAYER_X) return 10 - depth;
+        if (winner === PLAYER_O) return depth - 10;
+        if (board.every(cell => cell !== EMPTY)) return 0;
+
+        if (isMaximizing) {
+            let bestScore = -Infinity;
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === EMPTY) {
+                    board[i] = PLAYER_X;
+                    const score = minimax(board, depth + 1, false);
+                    board[i] = EMPTY;
+                    bestScore = Math.max(score, bestScore);
+                }
+            }
+            return bestScore;
+        } else {
+            let bestScore = Infinity;
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === EMPTY) {
+                    board[i] = PLAYER_O;
+                    const score = minimax(board, depth + 1, true);
+                    board[i] = EMPTY;
+                    bestScore = Math.min(score, bestScore);
+                }
+            }
+            return bestScore;
+        }
+    }
+
+    function checkWinner() {
+        const winningCombinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],  // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],  // Columns
+            [0, 4, 8], [2, 4, 6]               // Diagonals
+        ];
+        for (const combo of winningCombinations) {
+            const [a, b, c] = combo;
+            if (board[a] === board[b] && board[b] === board[c] && board[a] !== EMPTY) {
+                return board[a];
+            }
+        }
+        return null;
+    }
+
+    function checkGameOver() {
+        const winner = checkWinner();
+        if (winner) {
+            consoleOutput.textContent += `${winner} wins!\n`;
+            isGameOver = true;
+            playAgainButton.classList.remove('hidden');
+            return true;
+        }
+        if (board.every(cell => cell !== EMPTY)) {
+            consoleOutput.textContent += "It's a draw!\n";
+            isGameOver = true;
+            playAgainButton.classList.remove('hidden');
+            return true;
+        }
+        return false;
+    }
+
+    function updateBoard() {
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach((cell, index) => {
+            cell.textContent = board[index];
+        });
+    }
+
+    function resetBoard() {
+        board.fill(EMPTY);
+        updateBoard();
+        consoleOutput.textContent = "Game Reset. You can start a new game.\n";
+        playAgainButton.classList.add('hidden');
+        isGameOver = false;
+    }
+});
